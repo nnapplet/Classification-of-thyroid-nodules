@@ -34,8 +34,7 @@ class DualChannelModel(nn.Module):
         super().__init__()
         self.backbone_1 = backbone(**backbone_kwargs)
         self.backbone_2 = backbone(**backbone_kwargs)
-        self.sparse_constraint
-constraint = sparse_constraint
+        self.sparse_constraint = sparse_constraint
         self.sparse_lambda = sparse_lambda
 
         if sparse_constraint:
