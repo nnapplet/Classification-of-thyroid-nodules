@@ -34,4 +34,89 @@ class DualChannelModel(nn.Module):
         super().__init__()
         self.backbone_1 = backbone(**backbone_kwargs)
         self.backbone_2 = backbone(**backbone_kwargs)
-        self.sparse_
+        self.sparse_constraint
+constraint = sparse_constraint
+        self.sparse_lambda = sparse_lambda
+
+        if sparse_constraint:
+            self.sparse_constraint_module = SparseConstraintModule(backbone_kwargs['num_classes'])
+
+        # Determine the input size of the first fully connected layer
+        with torch.no_grad():
+            dummy_input_1 = torch.randn(1, backbone_kwargs['in_channels'], 224, 224)
+            dummy_input_2 = torch.randn(1, backbone_kwargs['in_channels'], 224, 224)
+            dummy_features_1 = self.backbone_1(dummy_input_1)
+            dummy_features_2 = self.backbone_2(dummy_input_2)
+            dummy_features = torch.cat((dummy_features_1, dummy_features_2), dim=1)
+            if sparse_constraint:
+                dummy_features = self.sparse_constraint_module(dummy_features)
+            fc_input_size = dummy_features.size(1)
+
+        # Create the fully connected layers
+        fc_layers = [nn.Linear(fc_input_size, fc_layers[0])] + [
+            nn.Linear(fc_layers[i], fc_layers[i + 1]) for i in range(len(fc_layers) - 1)
+        ]
+        self.fc_layers = nn.ModuleList(fc_layers)
+
+    def forward(self, input_1, input_2):
+        """
+        Forward pass of the Dual-Channel Deep Learning Model.
+
+        Args:
+            input_1 (torch.Tensor): The input tensor for the first channel.
+            input_2 (torch.Tensor): The input tensor for the second channel.
+
+        Returns:
+            torch.Tensor: The output tensor representing the malignancy probabilities.
+        """
+        features_1 = self.backbone_1(input_1)
+        features_2 = self.backbone_2(input_2)
+        features = torch.cat((features_1, features_2), dim=1)
+
+        if self.sparse_constraint:
+            features = self.sparse_constraint_module(features)
+
+        for fc_layer in self.fc_layers[:-1]:
+            features = fc_layer(features)
+            features = nn.ReLU()(features)
+
+        output = self.fc_layers[-1](features)
+        return output
+
+class SparseConstraintModule(nn.Module):
+    """
+    Module for applying sparse constraint on the concatenated features.
+
+    Args:
+        num_classes (int): The number of classes for the classification task.
+
+    Attributes:
+        num_classes (int): The number of classes for the classification task.
+        sparse_weight (nn.Parameter): The learnable weight tensor for the sparse constraint.
+    """
+
+    def __init__(self, num_classes):
+        """
+        Initialize the SparseConstraintModule.
+
+        Args:
+            num_classes (int): The number of classes for the classification task.
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.sparse_weight = nn.Parameter(torch.ones(num_classes))
+
+    def forward(self, features):
+        """
+        Forward pass of the SparseConstraintModule.
+
+        Args:
+            features (torch.Tensor): The input tensor of concatenated features.
+
+        Returns:
+            torch.Tensor: The output tensor with sparse constraint applied.
+        """
+        batch_size = features.size(0)
+        sparse_constraint = torch.norm(features, p=1, dim=1).view(batch_size, 1)
+        sparse_loss = torch.sum(self.sparse_weight * sparse_constraint)
+        return features
