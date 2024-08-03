@@ -1,0 +1,37 @@
+import torch
+import torch.nn as nn
+from swin_transformer import SwinTransformer
+
+class DualChannelModel(nn.Module):
+    """
+    Dual-Channel Deep Learning Model for Thyroid Nodule Malignancy Classification.
+
+    Args:
+        backbone (nn.Module): The backbone network for feature extraction. Should be a class that takes `in_channels` and `num_classes` as keyword arguments.
+        backbone_kwargs (dict): Keyword arguments for the backbone network.
+        fc_layers (list): A list of integers representing the number of nodes in each fully connected layer.
+        sparse_constraint (bool, optional): Whether to apply a sparse constraint before the fully connected layers. Default is True.
+        sparse_lambda (float, optional): The weight of the sparse constraint term in the loss function. Default is 0.01.
+
+    Attributes:
+        backbone_1 (nn.Module): The backbone network for the first input channel.
+        backbone_2 (nn.Module): The backbone network for the second input channel.
+        sparse_constraint_module (SparseConstraintModule): The module for applying sparse constraint on the concatenated features.
+        fc_layers (nn.ModuleList): A list of fully connected layers.
+    """
+
+    def __init__(self, backbone, backbone_kwargs, fc_layers, sparse_constraint=True, sparse_lambda=0.01):
+        """
+        Initialize the Dual-Channel Deep Learning Model.
+
+        Args:
+            backbone (nn.Module): The backbone network for feature extraction. Should be a class that takes `in_channels` and `num_classes` as keyword arguments.
+            backbone_kwargs (dict): Keyword arguments for the backbone network.
+            fc_layers (list): A list of integers representing the number of nodes in each fully connected layer.
+            sparse_constraint (bool, optional): Whether to apply a sparse constraint before the fully connected layers. Default is True.
+            sparse_lambda (float, optional): The weight of the sparse constraint term in the loss function. Default is 0.01.
+        """
+        super().__init__()
+        self.backbone_1 = backbone(**backbone_kwargs)
+        self.backbone_2 = backbone(**backbone_kwargs)
+        self.sparse_
