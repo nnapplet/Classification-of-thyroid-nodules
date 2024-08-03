@@ -4,7 +4,7 @@ import torch.optim as optim
 from torchvision import models, transforms
 from torch.utils.data import DataLoader
 from dataset import ThyroidDataset
-
+ 
 # Set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
