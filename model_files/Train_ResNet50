@@ -5,31 +5,31 @@ from torchvision import models, transforms
 from torch.utils.data import DataLoader
 from dataset import ThyroidDataset
 
-# 设置设备
+# Set device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# 定义转换
+# Define transformations
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# 加载训练数据集
+# Load training dataset
 train_dataset = ThyroidDataset('path/to/train/data', transform=transform)
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 
-# 加载预训练的ResNet50模型
+# Load pre-trained ResNet50 model
 model = models.resnet50(pretrained=True)
 num_features = model.fc.in_features
-model.fc = nn.Linear(num_features, 2)  # 修改最后一层为二分类
+model.fc = nn.Linear(num_features, 2)  # Modify the last layer for binary classification
 model = model.to(device)
 
-# 定义损失函数和优化器
+# Define loss function and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# 训练模型
+# Train the model
 num_epochs = 20
 for epoch in range(num_epochs):
     running_loss = 0.0
@@ -48,5 +48,5 @@ for epoch in range(num_epochs):
     epoch_loss = running_loss / len(train_loader)
     print(f'Epoch {epoch + 1}, Loss: {epoch_loss:.4f}')
 
-# 保存模型
+# Save the model
 torch.save(model.state_dict(), 'thyroid_model.pth')
