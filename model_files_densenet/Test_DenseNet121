@@ -1,0 +1,32 @@
+import torch
+from torchvision import models, transforms
+from dataset import ThyroidDataset
+
+# Set device
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Define transformations
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+# Load test dataset
+test_dataset = ThyroidDataset('path/to/test/data', transform=transform)
+
+# Load the trained model
+model = models.densenet121(pretrained=True)
+num_features = model.classifier.in_features
+model.classifier = nn.Linear(num_features, 2)
+model.load_state_dict(torch.load('thyroid_model.pth'))
+model = model.to(device)
+model.eval()
+
+# Test the model
+with torch.no_grad():
+    for inputs, labels in test_dataset:
+        inputs = inputs.to(device)
+        outputs = model(inputs)
+        probabilities = torch.softmax(outputs, dim=1)[:, 1]  # Get the probability of malignancy
+        print(f'Malignancy probability: {probabilities.item():.4f}')
