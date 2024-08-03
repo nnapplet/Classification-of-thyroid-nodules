@@ -1,0 +1,40 @@
+import os
+import torch
+from torchvision import transforms
+from dataset import ThyroidDataset
+from utils import load_model
+from dual_channel_model import DualChannelModel
+from swin_transformer import SwinTransformer
+
+# Set device
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# Define transformations
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+# Load test dataset
+test_dataset = ThyroidDataset('path/to/test/data', transform=transform)
+
+# Load the trained model
+model = DualChannelModel(
+    backbone=SwinTransformer,
+    backbone_kwargs={'in_channels': 3, 'num_classes': 2},
+    fc_layers=[1024, 512, 256, 2],
+    sparse_constraint=True
+)
+model = load_model(model, 'thyroid_model_final.pth')
+model = model.to(device)
+model.eval()
+
+# Test the model
+with torch.no_grad():
+    for inputs_1, inputs_2, labels in test_dataset:
+        inputs_1 = inputs_1.to(device)
+        inputs_2 = inputs_2.to(device)
+        outputs = model(inputs_1, inputs_2)
+        probabilities = torch.softmax(outputs, dim=1)[:, 1]  # Get the probability of malignancy
+        print(f'Malignancy probability: {probabilities.item():.4f}')
