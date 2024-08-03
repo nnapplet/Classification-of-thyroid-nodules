@@ -3,7 +3,7 @@ from torchvision import models, transforms
 from dataset import ThyroidDataset
 
 # Set device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
 
 # Define transformations
 transform = transforms.Compose([
