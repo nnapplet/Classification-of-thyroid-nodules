@@ -1,0 +1,75 @@
+import os
+import numpy as np
+from PIL import Image
+import torch
+from torch.utils.data import Dataset
+
+class ThyroidDataset(Dataset):
+    """
+    Thyroid Nodule Dataset for Malignancy Classification.
+
+    Args:
+        root_dir (str): Path to the root directory of the dataset.
+        transform (callable, optional): Optional transform to be applied on a sample.
+
+    Attributes:
+        samples (list): List of samples in the dataset, where each sample is a tuple (image_path_1, image_path_2, label).
+        transform (callable, optional): Optional transform to be applied on a sample.
+    """
+
+    def __init__(self, root_dir, transform=None):
+        """
+        Initialize the dataset.
+
+        Args:
+            root_dir (str): Path to the root directory of the dataset.
+            transform (callable, optional): Optional transform to be applied on a sample.
+        """
+        self.root_dir = root_dir
+        self.transform = transform
+        self.samples = []
+
+        # Iterate over the root directory and collect samples
+        for label_dir in os.listdir(root_dir):
+            label_path = os.path.join(root_dir, label_dir)
+            if os.path.isdir(label_path):
+                label = int(label_dir)
+                for patient_dir in os.listdir(label_path):
+                    patient_path = os.path.join(label_path, patient_dir)
+                    if os.path.isdir(patient_path):
+                        image_paths = []
+                        for image_file in os.listdir(patient_path):
+                            if image_file.endswith('.png') or image_file.endswith('.jpg'):
+                                image_path = os.path.join(patient_path, image_file)
+                                image_paths.append(image_path)
+                        if len(image_paths) == 2:
+                            self.samples.append((image_paths[0], image_paths[1], label))
+
+    def __len__(self):
+        """
+        Get the length of the dataset.
+
+        Returns:
+            int: Length of the dataset.
+        """
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        """
+        Get a sample from the dataset.
+
+        Args:
+            idx (int): Index of the sample to retrieve.
+
+        Returns:
+            tuple: A tuple containing the two input images and the label.
+        """
+        image_path_1, image_path_2, label = self.samples[idx]
+        image_1 = Image.open(image_path_1).convert('RGB')
+        image_2 = Image.open(image_path_2).convert('RGB')
+
+        if self.transform:
+            image_1 = self.transform(image_1)
+            image_2 = self.transform(image_2)
+
+        return image_1, image_2, label
